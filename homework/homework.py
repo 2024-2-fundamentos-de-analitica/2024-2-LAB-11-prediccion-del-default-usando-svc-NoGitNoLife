@@ -108,8 +108,8 @@ from sklearn.decomposition import PCA
 from sklearn.feature_selection import SelectKBest
 from sklearn.svm import SVC
 from sklearn.pipeline import Pipeline
-from sklearn.model_selection import GridSearchCV
-from sklearn.metrics import precision_score, balanced_accuracy_score, recall_score, f1_score, confusion_matrix
+from sklearn.model_selection import GridSearchCV, StratifiedKFold
+from sklearn.metrics import precision_score, balanced_accuracy_score, recall_score, f1_score, confusion_matrix, make_scorer
 
 class DataProcessor:
     @staticmethod
@@ -143,13 +143,11 @@ class ModelBuilder:
         categorical_transformer = OneHotEncoder(handle_unknown='ignore')
         numeric_transformer = StandardScaler()
         
-     
         preprocessor = ColumnTransformer([
             ('categorical', categorical_transformer, self.categorical_features),
             ('numeric', numeric_transformer, self.numeric_features)
         ])
         
-  
         return Pipeline([
             ('preprocessor', preprocessor),
             ('pca', PCA(n_components=None)),  
@@ -161,19 +159,27 @@ class ModelBuilder:
     def create_grid_search(self, pipeline: Pipeline) -> GridSearchCV:
         """Configure grid search with hyperparameters"""
         hyperparameters = {
-            'pca__n_components':[29],
-            'feature_selector__k': [12],
+            'pca__n_components': [25], # range(20,29),
+            'feature_selector__k': [14], # [10,11,12,13,14],
             'classifier__kernel': ['rbf'],
             'classifier__gamma': [0.1], 
+     
         }
+        
+        # Usamos StratifiedKFold para asegurar que la distribución de clases esté representada correctamente en cada pliegue
+        stratified_kfold = StratifiedKFold(n_splits=10, shuffle=True, random_state=85)
+        
+        # Configuramos make_scorer para usar balanced_accuracy_score
+        #scorer = make_scorer(balanced_accuracy_score)  
+        scorer = make_scorer(precision_score)
         
         return GridSearchCV(
             estimator=pipeline,
-            cv=10, 
+            cv=stratified_kfold,  # Usar StratifiedKFold
             param_grid=hyperparameters,
             n_jobs=-1,
             verbose=2,
-            scoring='balanced_accuracy',
+            scoring=scorer,  # Usar balanced_accuracy_score como métrica
             refit=True
         )
 
@@ -284,6 +290,7 @@ def main():
     for metric in metrics:
         if metric['type'] == 'metrics':
             print(f"{metric['dataset']} Balanced acc: {metric['balanced_accuracy']:.4f}")
+            print(f"{metric['dataset']} precs: {metric['precision']:.4f}")
 
 if __name__ == "__main__":
     main()

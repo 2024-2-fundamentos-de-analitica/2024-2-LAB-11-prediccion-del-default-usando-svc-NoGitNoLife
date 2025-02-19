@@ -1,11 +1,12 @@
-import pickle
+import json
 
-# Ruta del archivo .pkl
-file_path = 'files/grading/y_train.pkl'
+# Definir la ruta del archivo
+file_path = 'files/output/metrics.json'
 
-# Cargar el archivo Pickle
-with open(file_path, 'rb') as file:
-    x_test = pickle.load(file)
+# Leer el archivo
+with open(file_path, 'r') as file:
+    metrics_data = [json.loads(line) for line in file]
 
-# Ver los primeros datos cargados (si es adecuado según el tipo de datos)
-print(x_test)
+# Mostrar el contenido
+for metric in metrics_data:
+    print(metric)
