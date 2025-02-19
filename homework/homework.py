@@ -139,21 +139,21 @@ class ModelBuilder:
         
     def build_pipeline(self) -> Pipeline:
         """Create preprocessing and model pipeline"""
-        # Create preprocessing steps for categorical and numeric features
+        
         categorical_transformer = OneHotEncoder(handle_unknown='ignore')
         numeric_transformer = StandardScaler()
         
-        # Create the column transformer for initial preprocessing
+     
         preprocessor = ColumnTransformer([
             ('categorical', categorical_transformer, self.categorical_features),
             ('numeric', numeric_transformer, self.numeric_features)
         ])
         
-        # Create the pipeline with all required steps as specified in the task
+  
         return Pipeline([
             ('preprocessor', preprocessor),
-            ('pca', PCA(n_components=None)),  # Use all components as specified
-            ('scaler', StandardScaler()),      # Standardize after PCA
+            ('pca', PCA(n_components=None)),  
+            ('scaler', StandardScaler()),   
             ('feature_selector', SelectKBest()),
             ('classifier', SVC(random_state=42))
         ])
@@ -161,20 +161,19 @@ class ModelBuilder:
     def create_grid_search(self, pipeline: Pipeline) -> GridSearchCV:
         """Configure grid search with hyperparameters"""
         hyperparameters = {
-            'feature_selector__k': range(20),  # Number of features to select
-            'classifier__C': [1.0],       # SVM regularization parameter
-            'classifier__kernel': [ 'rbf'],  # SVM kernel
-            'classifier__gamma': [ 0.1],  # Kernel coefficient for 'rbf'
-            #'feature_selection__k': [12],   
+            'pca__n_components':[29],
+            'feature_selector__k': [12],
+            'classifier__kernel': ['rbf'],
+            'classifier__gamma': [0.1], 
         }
         
         return GridSearchCV(
             estimator=pipeline,
-            cv=10,  # As specified in the task
+            cv=10, 
             param_grid=hyperparameters,
             n_jobs=-1,
             verbose=2,
-            scoring='balanced_accuracy',  # As specified in the task
+            scoring='balanced_accuracy',
             refit=True
         )
 
@@ -280,6 +279,11 @@ def main():
         os.path.join(output_path, 'metrics.json'),
         metrics
     )
+
+    # Print precision values for both train and test sets
+    for metric in metrics:
+        if metric['type'] == 'metrics':
+            print(f"{metric['dataset']} Balanced acc: {metric['balanced_accuracy']:.4f}")
 
 if __name__ == "__main__":
     main()
