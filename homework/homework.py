@@ -284,6 +284,7 @@ def main():
     ModelPersistence.save_metrics(
         os.path.join(output_path, 'metrics.json'),
         metrics
+        
     )
 
     # Print precision values for both train and test sets
