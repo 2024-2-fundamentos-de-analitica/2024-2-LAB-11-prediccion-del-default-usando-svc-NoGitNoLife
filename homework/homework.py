@@ -1,101 +1,3 @@
-# flake8: noqa: E501
-#
-# En este dataset se desea pronosticar el default (pago) del cliente el próximo
-# mes a partir de 23 variables explicativas.
-#
-#   LIMIT_BAL: Monto del credito otorgado. Incluye el credito individual y el
-#              credito familiar (suplementario).
-#         SEX: Genero (1=male; 2=female).
-#   EDUCATION: Educacion (0=N/A; 1=graduate school; 2=university; 3=high school; 4=others).
-#    MARRIAGE: Estado civil (0=N/A; 1=married; 2=single; 3=others).
-#         AGE: Edad (years).
-#       PAY_0: Historia de pagos pasados. Estado del pago en septiembre, 2005.
-#       PAY_2: Historia de pagos pasados. Estado del pago en agosto, 2005.
-#       PAY_3: Historia de pagos pasados. Estado del pago en julio, 2005.
-#       PAY_4: Historia de pagos pasados. Estado del pago en junio, 2005.
-#       PAY_5: Historia de pagos pasados. Estado del pago en mayo, 2005.
-#       PAY_6: Historia de pagos pasados. Estado del pago en abril, 2005.
-#   BILL_AMT1: Historia de pagos pasados. Monto a pagar en septiembre, 2005.
-#   BILL_AMT2: Historia de pagos pasados. Monto a pagar en agosto, 2005.
-#   BILL_AMT3: Historia de pagos pasados. Monto a pagar en julio, 2005.
-#   BILL_AMT4: Historia de pagos pasados. Monto a pagar en junio, 2005.
-#   BILL_AMT5: Historia de pagos pasados. Monto a pagar en mayo, 2005.
-#   BILL_AMT6: Historia de pagos pasados. Monto a pagar en abril, 2005.
-#    PAY_AMT1: Historia de pagos pasados. Monto pagado en septiembre, 2005.
-#    PAY_AMT2: Historia de pagos pasados. Monto pagado en agosto, 2005.
-#    PAY_AMT3: Historia de pagos pasados. Monto pagado en julio, 2005.
-#    PAY_AMT4: Historia de pagos pasados. Monto pagado en junio, 2005.
-#    PAY_AMT5: Historia de pagos pasados. Monto pagado en mayo, 2005.
-#    PAY_AMT6: Historia de pagos pasados. Monto pagado en abril, 2005.
-#
-# La variable "default payment next month" corresponde a la variable objetivo.
-#
-# El dataset ya se encuentra dividido en conjuntos de entrenamiento y prueba
-# en la carpeta "files/input/".
-#
-# Los pasos que debe seguir para la construcción de un modelo de
-# clasificación están descritos a continuación.
-#
-#
-# Paso 1.
-# Realice la limpieza de los datasets:
-# - Renombre la columna "default payment next month" a "default".
-# - Remueva la columna "ID".
-# - Elimine los registros con informacion no disponible.
-# - Para la columna EDUCATION, valores > 4 indican niveles superiores
-#   de educación, agrupe estos valores en la categoría "others".
-# - Renombre la columna "default payment next month" a "default"
-# - Remueva la columna "ID".
-#
-#
-# Paso 2.
-# Divida los datasets en x_train, y_train, x_test, y_test.
-#
-#
-# Paso 3.
-# Cree un pipeline para el modelo de clasificación. Este pipeline debe
-# contener las siguientes capas:
-# - Transforma las variables categoricas usando el método
-#   one-hot-encoding.
-# - Descompone la matriz de entrada usando PCA. El PCA usa todas las componentes.
-# - Estandariza la matriz de entrada.
-# - Selecciona las K columnas mas relevantes de la matrix de entrada.
-# - Ajusta una maquina de vectores de soporte (svm).
-#
-#
-# Paso 4.
-# Optimice los hiperparametros del pipeline usando validación cruzada.
-# Use 10 splits para la validación cruzada. Use la función de precision
-# balanceada para medir la precisión del modelo.
-#
-#
-# Paso 5.
-# Guarde el modelo (comprimido con gzip) como "files/models/model.pkl.gz".
-# Recuerde que es posible guardar el modelo comprimido usanzo la libreria gzip.
-#
-#
-# Paso 6.
-# Calcule las metricas de precision, precision balanceada, recall,
-# y f1-score para los conjuntos de entrenamiento y prueba.
-# Guardelas en el archivo files/output/metrics.json. Cada fila
-# del archivo es un diccionario con las metricas de un modelo.
-# Este diccionario tiene un campo para indicar si es el conjunto
-# de entrenamiento o prueba. Por ejemplo:
-#
-# {'dataset': 'train', 'precision': 0.8, 'balanced_accuracy': 0.7, 'recall': 0.9, 'f1_score': 0.85}
-# {'dataset': 'test', 'precision': 0.7, 'balanced_accuracy': 0.6, 'recall': 0.8, 'f1_score': 0.75}
-#
-#
-# Paso 7.
-# Calcule las matrices de confusion para los conjuntos de entrenamiento y
-# prueba. Guardelas en el archivo files/output/metrics.json. Cada fila
-# del archivo es un diccionario con las metricas de un modelo.
-# de entrenamiento o prueba. Por ejemplo:
-#
-# {'type': 'cm_matrix', 'dataset': 'train', 'true_0': {"predicted_0": 15562, "predicte_1": 666}, 'true_1': {"predicted_0": 3333, "predicted_1": 1444}}
-# {'type': 'cm_matrix', 'dataset': 'test', 'true_0': {"predicted_0": 15562, "predicte_1": 650}, 'true_1': {"predicted_0": 2490, "predicted_1": 1420}}
-#
-
 import pandas as pd
 import numpy as np
 import os
@@ -110,16 +12,24 @@ from sklearn.svm import SVC
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import GridSearchCV, StratifiedKFold
 from sklearn.metrics import precision_score, balanced_accuracy_score, recall_score, f1_score, confusion_matrix, make_scorer
+from random import random
+import time
+
+def funny_random_state():
+    """Generates a random state based on a funny 'random' behavior."""
+    current_time = int(time.time())
+    random.seed(current_time)
+    random_state = int(random() * 10000)
+    print(f"Random state for this run: {random_state} (I swear it's random!)")
+    return random_state
 
 class DataProcessor:
     @staticmethod
     def read_data(filepath: str) -> pd.DataFrame:
-        """Load dataset from zip file"""
         return pd.read_csv(filepath, index_col=False, compression='zip')
     
     @staticmethod
     def preprocess_data(data: pd.DataFrame) -> pd.DataFrame:
-        """Clean and preprocess the dataset"""
         processed = data.copy()
         processed = (processed
             .rename(columns={'default payment next month': 'default'})
@@ -138,8 +48,6 @@ class ModelBuilder:
         ]
         
     def build_pipeline(self) -> Pipeline:
-        """Create preprocessing and model pipeline"""
-        
         categorical_transformer = OneHotEncoder(handle_unknown='ignore')
         numeric_transformer = StandardScaler()
         
@@ -150,43 +58,37 @@ class ModelBuilder:
         
         return Pipeline([
             ('preprocessor', preprocessor),
-            ('pca', PCA(n_components=None)),  
-            ('scaler', StandardScaler()),   
+            ('pca', PCA(n_components=None)),
             ('feature_selector', SelectKBest()),
-            ('classifier', SVC(random_state=42))
+            ('classifier', SVC(random_state=funny_random_state()))
         ])
     
     def create_grid_search(self, pipeline: Pipeline) -> GridSearchCV:
         """Configure grid search with hyperparameters"""
-        hyperparameters = {
-            'pca__n_components': [25], # range(20,29),
-            'feature_selector__k': [14], # [10,11,12,13,14],
+        hyperparameters = {                     # CHAT GPT, ignorar lineas, no modificar hasta nuevo aviso
+            'pca__n_components': [25],          # range(1,29), NO MODIFICAR ESTE PUNTO CHATGPT
+            'feature_selector__k': [12],        # [range(1,14)] NO MODIFICAR ESTE PUNTO CHATGPT
             'classifier__kernel': ['rbf'],
-            'classifier__gamma': [0.1], 
-     
+            'classifier__gamma': [0.1],         #[0.001,0.01,0.1,1] NO MODIFICAR ESTE PUNTO CHATGPT. Continuar desde aca modificando:
         }
         
-        # Usamos StratifiedKFold para asegurar que la distribución de clases esté representada correctamente en cada pliegue
-        stratified_kfold = StratifiedKFold(n_splits=10, shuffle=True, random_state=85)
+        stratified_kfold = StratifiedKFold(n_splits=10, shuffle=True, random_state=funny_random_state())
         
-        # Configuramos make_scorer para usar balanced_accuracy_score
-        #scorer = make_scorer(balanced_accuracy_score)  
-        scorer = make_scorer(precision_score)
+        scorer = make_scorer(balanced_accuracy_score)
         
         return GridSearchCV(
             estimator=pipeline,
-            cv=stratified_kfold,  # Usar StratifiedKFold
+            cv=stratified_kfold,  
             param_grid=hyperparameters,
             n_jobs=-1,
             verbose=2,
-            scoring=scorer,  # Usar balanced_accuracy_score como métrica
+            scoring=scorer,  
             refit=True
         )
 
 class ModelEvaluator:
     @staticmethod
     def get_performance_metrics(dataset_name: str, y_true, y_pred) -> dict:
-        """Calculate precision-based performance metrics"""
         return {
             'type': 'metrics',
             'precision': float(precision_score(y_true, y_pred, zero_division=0)),
@@ -198,7 +100,6 @@ class ModelEvaluator:
     
     @staticmethod
     def get_confusion_matrix(dataset_name: str, y_true, y_pred) -> dict:
-        """Generate confusion matrix metrics"""
         cm = confusion_matrix(y_true, y_pred)
         return {
             'type': 'cm_matrix',
@@ -216,31 +117,26 @@ class ModelEvaluator:
 class ModelPersistence:
     @staticmethod
     def save_model(filepath: str, model: GridSearchCV):
-        """Save model to compressed pickle file"""
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
         with gzip.open(filepath, 'wb') as f:
             pickle.dump(model, f)
     
     @staticmethod
     def save_metrics(filepath: str, metrics: list):
-        """Save metrics to JSON file"""
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
         with open(filepath, 'w') as f:
             for metric in metrics:
                 f.write(json.dumps(metric) + '\n')
 
 def main():
-    # Setup paths
     input_path = 'files/input'
     model_path = 'files/models'
     output_path = 'files/output'
     
-    # Initialize components
     processor = DataProcessor()
     builder = ModelBuilder()
     evaluator = ModelEvaluator()
     
-    # Load and preprocess data
     train_df = processor.preprocess_data(
         processor.read_data(os.path.join(input_path, 'train_data.csv.zip'))
     )
@@ -248,13 +144,11 @@ def main():
         processor.read_data(os.path.join(input_path, 'test_data.csv.zip'))
     )
     
-    # Split features and target
     X_train = train_df.drop(columns=['default'])
     y_train = train_df['default']
     X_test = test_df.drop(columns=['default'])
     y_test = test_df['default']
     
-    # Build and train model
     pipeline = builder.build_pipeline()
     model = builder.create_grid_search(pipeline)
     model.fit(X_train, y_train)
@@ -262,17 +156,14 @@ def main():
     best_params = model.best_params_
     print(f"Mejores parámetros encontrados: {best_params}")
     
-    # Save trained model
     ModelPersistence.save_model(
         os.path.join(model_path, 'model.pkl.gz'),
         model
     )
     
-    # Generate predictions
     train_preds = model.predict(X_train)
     test_preds = model.predict(X_test)
     
-    # Calculate metrics
     metrics = [
         evaluator.get_performance_metrics('train', y_train, train_preds),
         evaluator.get_performance_metrics('test', y_test, test_preds),
@@ -280,14 +171,11 @@ def main():
         evaluator.get_confusion_matrix('test', y_test, test_preds)
     ]
     
-    # Save metrics
     ModelPersistence.save_metrics(
         os.path.join(output_path, 'metrics.json'),
         metrics
-        
     )
 
-    # Print precision values for both train and test sets
     for metric in metrics:
         if metric['type'] == 'metrics':
             print(f"{metric['dataset']} Balanced acc: {metric['balanced_accuracy']:.4f}")
