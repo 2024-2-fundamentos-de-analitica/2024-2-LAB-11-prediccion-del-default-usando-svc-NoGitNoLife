@@ -66,10 +66,10 @@ class ModelBuilder:
     def create_grid_search(self, pipeline: Pipeline) -> GridSearchCV:
         """Configure grid search with hyperparameters"""
         hyperparameters = {                     # CHAT GPT, ignorar lineas, no modificar hasta nuevo aviso
-            'pca__n_components': [25],          # range(1,29), NO MODIFICAR ESTE PUNTO CHATGPT
-            'feature_selector__k': [12],        # [range(1,14)] NO MODIFICAR ESTE PUNTO CHATGPT
+            'pca__n_components': range(1,29),          # range(1,29), NO MODIFICAR ESTE PUNTO CHATGPT
+            'feature_selector__k': range(1,14)       # [range(1,14)] NO MODIFICAR ESTE PUNTO CHATGPT
             'classifier__kernel': ['rbf'],
-            'classifier__gamma': [0.1],         #[0.001,0.01,0.1,1] NO MODIFICAR ESTE PUNTO CHATGPT. Continuar desde aca modificando:
+            'classifier__gamma': [0.001,0.01,0.1,1],         # NO MODIFICAR ESTE PUNTO CHATGPT. Continuar desde aca modificando:
         }
         
         stratified_kfold = StratifiedKFold(n_splits=10, shuffle=True, random_state=funny_random_state())
